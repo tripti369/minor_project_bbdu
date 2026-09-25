@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./agents:/app/agents
+      - ./data:/app/data
+    environment:
+      - PORT=8000
+    restart: unless-stopped

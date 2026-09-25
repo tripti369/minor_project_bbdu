@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# Database
+backend/data/app.db
+backend/data/rag_index_cache.json
+
+# Uploaded user files (keep the folder, ignore its contents)
+backend/data/uploaded/*
+!backend/data/uploaded/.gitkeep
+
+# Env files
+.env
+
+# OS
+.DS_Store
+Thumbs.db
