@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TiTech Predictive Intelligence Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    :root { color-scheme: dark; font-family: 'Inter', sans-serif; background: #080b14; color: #edf1fa; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background: radial-gradient(circle at top left, rgba(62,123,250,0.18), transparent 35%), radial-gradient(circle at top right, rgba(139,92,246,0.1), transparent 35%), #080b14; }
+    button,input,select { font: inherit; }
+    .hidden { display:none !important; }
+    .app-shell { display:none; }
+    .app-shell.active { display:block !important; }
+    .app-shell.hidden { display:none !important; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:16px 24px; background: rgba(13,18,32,0.9); border-bottom:1px solid rgba(148,163,255,0.08); position:sticky; top:0; z-index:10; }
+    .sidebar { width:260px; position:fixed; top:0; left:0; bottom:0; background: rgba(13,18,32,0.95); border-right:1px solid rgba(148,163,255,0.08); padding:24px 16px; display:flex; flex-direction:column; gap:18px; }
+    .sidebar .nav-item { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; color:#b9c2db; text-decoration:none; cursor:pointer; }
+    .sidebar .nav-item.active, .sidebar .nav-item:hover { background: rgba(62,123,250,0.12); color:#fff; }
+    .main-area { margin-left:260px; padding:20px 24px 40px; }
+    .card { background: rgba(13,18,32,0.95); border:1px solid rgba(148,163,255,0.08); border-radius:20px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.25); }
+    .grid { display:grid; gap:18px; }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid-12 { grid-template-columns: repeat(12, minmax(0,1fr)); }
+    .col-8 { grid-column: span 8; }
+    .col-4 { grid-column: span 4; }
+    .col-12 { grid-column: span 12; }
+    .page-head { display:flex; justify-content:space-between; align-items:flex-end; gap:18px; margin-bottom:22px; flex-wrap:wrap; }
+    .eyebrow { font-family: 'JetBrains Mono', monospace; font-size:11px; text-transform:uppercase; color:#7b82a5; letter-spacing:.16em; }
+    .page-title { font-size:30px; margin:0; }
+    .page-sub { color:#9aa5c0; max-width:620px; margin-top:8px; }
+    .nav-badge { margin-left:auto; padding:2px 10px; border-radius:999px; background: rgba(62,123,250,0.18); font-size:11px; }
+    .kpi-tile { display:flex; flex-direction:column; gap:10px; }
+    .kpi-value { font-size:28px; font-weight:700; }
+    .kpi-label { color:#9aa5c0; font-size:12px; }
+    .badge { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; font-size:11px; font-weight:600; }
+    .badge.info { background: rgba(96,165,250,0.14); color:#bcd4ff; }
+    .badge.success { background: rgba(52,211,153,0.14); color:#9ef1c9; }
+    .badge.warning { background: rgba(251,191,36,0.12); color:#ffe38f; }
+    .badge.danger { background: rgba(248,113,113,0.14); color:#ffb3b0; }
+    .timeline-row { display:flex; gap:10px; overflow-x:auto; padding-top:10px; }
+    .timeline-step { min-width:122px; position:relative; text-align:center; }
+    .timeline-node { width:36px; height:36px; margin:0 auto 10px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(14,20,35,0.9); border:1px solid rgba(148,163,255,0.12); color:#9aa5c0; }
+    .timeline-step.active .timeline-node { background:#3E7BFA; color:#fff; }
+    .timeline-step.done .timeline-node { background:#34d399; color:#050810; }
+    .timeline-line { position:absolute; top:17px; left:50%; width:100%; height:2px; background:rgba(148,163,255,0.08); z-index:-1; transform:translateX(-50%); }
+    .timeline-step:first-child .timeline-line { display:none; }
+    .dropzone { border:1px dashed rgba(148,163,255,0.24); border-radius:18px; padding:40px 24px; text-align:center; cursor:pointer; transition:all .2s ease; }
+    .dropzone.drag { background:rgba(62,123,250,0.1); }
+    .dropzone input { display:none; }
+    .chat-bubble { padding:14px 16px; border-radius:18px; margin-bottom:12px; max-width:80%; line-height:1.6; }
+    .chat-bubble.user { background: rgba(148,163,255,0.1); margin-left:auto; }
+    .chat-bubble.ai { background: rgba(62,123,250,0.12); }
+    .chat-input-row { display:flex; gap:10px; margin-top:16px; }
+    .chat-input-row input { flex:1; padding:12px 14px; border-radius:12px; border:1px solid rgba(148,163,255,0.18); background:rgba(13,18,32,0.95); color:#edf1fa; }
+    .slider-row { margin-top:16px; }
+    .slider-row-top { display:flex; justify-content:space-between; font-size:12px; margin-bottom:8px; }
+    input[type=range] { width:100%; accent-color:#8B5CF6; }
+    .heat-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+    .heat-cell { min-height:80px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:11px; text-align:center; padding:8px; }
+    .priority-matrix { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px; min-height:300px; }
+    .pm-quad { position:relative; border-radius:18px; border:1px solid rgba(148,163,255,0.16); padding:14px; background:rgba(148,163,255,0.04); }
+    .pm-dot { position:absolute; width:12px; height:12px; border-radius:50%; box-shadow:0 0 14px rgba(0,0,0,0.25); }
+    .chat-source { display:inline-flex; margin-top:10px; gap:8px; font-size:11px; color:#d4e0ff; }
+    .agent-card { padding:18px; border-radius:20px; background:rgba(13,18,32,0.95); border:1px solid rgba(148,163,255,0.08); }
+    .agent-card-top { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    .agent-avatar { width:44px; height:44px; border-radius:16px; background:rgba(62,123,250,0.16); display:flex; align-items:center; justify-content:center; }
+    .agent-name { font-weight:700; }
+    .agent-role { font-size:12px; color:#9aa5c0; }
+    .agent-task { font-size:13px; color:#cbd5fb; margin-bottom:10px; }
+    .agent-conf-bar { height:6px; background:rgba(148,163,255,0.12); border-radius:999px; overflow:hidden; }
+    .agent-conf-fill { height:100%; background:#3E7BFA; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:12px; padding:11px 18px; color:#050810; background:#3E7BFA; cursor:pointer; }
+    .btn.btn-ghost { background:rgba(148,163,255,0.08); color:#edf1fa; }
+    .btn-sm { padding:8px 14px; font-size:13px; }
+    .select-input { width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(148,163,255,0.18); background:rgba(13,18,32,0.95); color:#edf1fa; }
+    @media(max-width:1200px) { .grid-4 { grid-template-columns: repeat(2, minmax(0,1fr)); } .main-area { margin-left:0; } .sidebar { position:relative; width:100%; height:auto; } }
+  </style>
+</head>
+<body>
+  <div id="login-view" class="app-shell active" style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
+    <div class="card" style="max-width:440px; width:100%;">
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px;">TiTech PIE</div>
+      <h2 style="margin:0 0 10px;font-size:24px;">Sign in</h2>
+      <p style="margin:0 0 24px;color:#9aa5c0;">Access your predictive intelligence workspace.</p>
+      <form id="login-form">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <label style="font-size:13px;color:#9aa5c0;">Work email<input type="email" id="loginEmail" placeholder="you@company.com" value="tripti@titech.ai" required style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(148,163,255,0.14);background:rgba(13,18,32,0.9);color:#edf1fa;" /></label>
+          <label style="font-size:13px;color:#9aa5c0;">Password<input type="password" id="loginPassword" placeholder="Enter your password" required style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(148,163,255,0.14);background:rgba(13,18,32,0.9);color:#edf1fa;" /></label>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:18px 0; font-size:12px;color:#9aa5c0;"><label><input type="checkbox" id="keepSignedIn" checked style="margin-right:8px; accent-color:#8b5cf6;"/>Keep me signed in</label></div>
+        <button type="submit" class="btn" style="width:100%;">Sign in to workspace</button>
+      </form>
+    </div>
+  </div>
+  <div id="app-shell" class="app-shell">
+    <aside class="sidebar">
+      <div style="font-size:18px;font-weight:700;">TiTech PIE</div>
+      <nav style="display:grid; gap:8px; margin-top:24px;">
+        <div class="nav-item active" data-view="dashboard">Dashboard</div>
+        <div class="nav-item" data-view="workspace">AI Workspace</div>
+        <div class="nav-item" data-view="datasets">Datasets</div>
+        <div class="nav-item" data-view="knowledge">Knowledge Base</div>
+        <div class="nav-item" data-view="forecasting">Forecasting</div>
+        <div class="nav-item" data-view="analytics">Analytics</div>
+        <div class="nav-item" data-view="scenario">Scenario Simulator</div>
+        <div class="nav-item" data-view="agents">AI Agents</div>
+        <div class="nav-item" data-view="reports">Reports</div>
+        <div class="nav-item" data-view="settings">Settings</div>
+      </nav>
+      <div style="margin-top:auto;padding:14px 0 0; border-top:1px solid rgba(148,163,255,0.08); color:#9aa5c0; font-size:12px;">Orchestrator active · <b id="mini-agent-count">10/10</b> agents online</div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar"><div style="font-size:12px;color:#9aa5c0;">TiTech PIE / <b id="crumb-current">Dashboard</b></div><div style="display:flex;gap:12px;align-items:center;"><div style="padding:8px 12px;border-radius:12px;background:rgba(52,211,153,0.12);color:#9ef1c9;">Production</div><div style="width:34px;height:34px;border-radius:14px;background:#3E7BFA;display:flex;align-items:center;justify-content:center;color:#050810;font-weight:700;">TT</div></div></header>
+      <main>
+        <section class="view active" id="view-dashboard">
+          <div class="page-head"><div><div class="eyebrow">GOOD MORNING, TRIPTI</div><h1 class="page-title">Executive Overview</h1><p class="page-sub">Your enterprise AI stack processed <b id="dataEventCount" style="color:#bcd4ff;">1,204</b> data events overnight across <b id="datasetCount" style="color:#bcd4ff;">12</b> active datasets.</p></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button class="btn btn-ghost" onclick="nav('reports')" style="color:#edf1fa;background:rgba(148,163,255,0.08);">Export snapshot</button><button class="btn" onclick="nav('workspace')">+ New AI Workspace</button></div></div>
+          <div class="grid grid-4" style="margin-bottom:18px;"><div class="card kpi-tile"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:12px;color:#9aa5c0;">Business Health</div><span class="badge success">Validated</span></div><div id="businessHealthScore" class="kpi-value">87.2</div><div class="kpi-label">Business Health Score</div></div><div class="card kpi-tile"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:12px;color:#9aa5c0;">Enterprise Risk</div><span class="badge warning">Low</span></div><div id="riskLevelValue" class="kpi-value">Low</div><div class="kpi-label">Risk Level</div></div><div class="card kpi-tile"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:12px;color:#9aa5c0;">Forecast Accuracy</div><span id="forecastAccuracyValue" class="badge info">96.4%</span></div><div class="kpi-value">96.4%</div><div class="kpi-label">Forecast Accuracy</div></div><div class="card kpi-tile"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-size:12px;color:#9aa5c0;">AI Agents</div><span class="badge success">Live</span></div><div id="activeAIAgents" class="kpi-value">10/10</div><div class="kpi-label">Active AI Agents</div></div></div>
+          <div class="grid grid-12" style="margin-bottom:18px;"><div class="card col-8" style="position:relative;"><div style="position:absolute;top:16px;left:20px;z-index:1;"><span class="badge info">Agent Constellation · live orchestration</span></div><canvas id="dashConstellation" height="300" style="width:100%;border-radius:18px;"></canvas></div><div class="card col-4" style="padding:24px;"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Today's AI Insights</div><div style="display:grid;gap:12px;"><div style="padding:14px;border-radius:16px;background:rgba(148,163,255,0.06);">Q3 revenue trending <b style="color:#7ff3c4;">+12.4%</b></div><div style="padding:14px;border-radius:16px;background:rgba(148,163,255,0.06);">Churn risk in APAC <b style="color:#ffdd8a;">watch</b></div><div style="padding:14px;border-radius:16px;background:rgba(148,163,255,0.06);">Inventory anomaly <b style="color:#ffb3b0;">2 SKUs</b></div><div style="padding:14px;border-radius:16px;background:rgba(148,163,255,0.06);">New RAG sources indexed <b style="color:#bcd4ff;">6 docs</b></div></div></div></div>
+          <div class="grid grid-12"><div class="card col-7"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Enterprise KPIs</div><canvas id="dashKpiChart" height="150" style="width:100%;"></canvas></div><div class="card col-5"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Recent Uploads</div><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="color:#9aa5c0;text-align:left;font-size:11px;"><th style="padding:10px 14px;">Dataset</th><th style="padding:10px 14px;">Type</th><th style="padding:10px 14px;">Status</th></tr><tr><td style="padding:10px 14px;">Q3_Revenue_Ledger.csv</td><td style="padding:10px 14px;">Financial</td><td style="padding:10px 14px;"><span class="badge success">Validated</span></td></tr><tr><td style="padding:10px 14px;">Customer_Churn_2026.xlsx</td><td style="padding:10px 14px;">CRM</td><td style="padding:10px 14px;"><span class="badge success">Validated</span></td></tr><tr><td style="padding:10px 14px;">Vendor_Contracts.pdf</td><td style="padding:10px 14px;">Legal Doc</td><td style="padding:10px 14px;"><span class="badge warning">Processing</span></td></tr><tr><td style="padding:10px 14px;">APAC_Ops_Metrics.json</td><td style="padding:10px 14px;">Operations</td><td style="padding:10px 14px;"><span class="badge success">Validated</span></td></tr></table></div></div>
+        </section>
+        <section class="view" id="view-workspace" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">END-TO-END PIPELINE</div><h1 class="page-title">AI Workspace</h1><p class="page-sub">Track a dataset from raw upload to executive-ready recommendation in one orchestrated run.</p></div><button class="btn" id="runPipelineBtn">▶ Run pipeline</button></div>
+          <div class="card" style="margin-bottom:18px;"><div style="font-size:16px;font-weight:700;margin-bottom:12px;">AI Processing Timeline</div><div class="timeline-row" id="pipelineTimeline"></div></div>
+          <div class="card" style="margin-bottom:18px;" id="backendResultCard"><div style="font-size:16px;font-weight:700;margin-bottom:12px;">Live Backend Prediction</div><div id="backendResultContent" style="color:#c6d2ee;font-size:13px;line-height:1.6;">No prediction executed yet. Press Run pipeline to fetch live results.</div></div>
+          <div class="grid grid-12"><div class="card col-8"><div style="font-size:16px;font-weight:700;margin-bottom:12px;">Live Agent Activity</div><div id="workspaceLog" style="display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;"></div></div><div class="card col-4"><div style="font-size:16px;font-weight:700;margin-bottom:12px;">Dataset Health Indicator</div><div style="display:flex;gap:18px;margin-bottom:18px;"><div style="width:74px;height:74px;border-radius:50%;background:rgba(62,123,250,0.12);display:flex;align-items:center;justify-content:center;font-weight:700;">94%</div><div><div style="font-size:13px;font-weight:600;">Excellent quality</div><div style="font-size:12px;color:#9aa5c0;">0 missing keys · 2 outliers flagged</div></div></div><div style="font-size:12px;color:#9aa5c0;margin-bottom:8px;">Vendor_Contracts.pdf <span style="float:right;">72%</span></div><div style="height:8px;background:rgba(148,163,255,0.12);border-radius:999px;overflow:hidden;"><div style="width:72%;height:100%;background:#3E7BFA;"></div></div><div style="margin-top:14px;font-size:12px;color:#9aa5c0;margin-bottom:8px;">APAC_Ops_Metrics.json <span style="float:right;">100%</span></div><div style="height:8px;background:rgba(148,163,255,0.12);border-radius:999px;overflow:hidden;"><div style="width:100%;height:100%;background:#34D399;"></div></div></div></div>
+        </section>
+        <section class="view" id="view-datasets" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">DATA INGESTION</div><h1 class="page-title">Datasets</h1><p class="page-sub">Upload enterprise data or documents — the Classification Agent detects type and validates automatically.</p></div></div>
+          <div class="card"><div class="dropzone" id="dropzone"><div style="font-size:22px;">📁</div><div style="font-weight:700;font-size:15px;">Drag & drop files, or click to browse</div><div style="color:#9aa5c0;margin-top:10px;">Automatic dataset classification runs the moment a file lands here</div><div style="display:flex;gap:10px;justify-content:center;margin-top:14px;"><span class="badge">.CSV</span><span class="badge">.XLSX</span><span class="badge">.PDF</span><span class="badge">.JSON</span></div><input type="file" id="fileInput" multiple /></div></div>
+          <div id="datasetStatsGrid" style="display:none;" class="grid grid-12">
+            <div class="card col-4" id="detectedTypeCard"></div>
+            <div class="card col-4" id="validationStatusCard"></div>
+            <div class="card col-4" id="classificationConfCard"></div>
+          </div>
+          <div id="datasetPreviewCard" class="card" style="display:none;"></div>
+          <div id="datasetEmptyState" class="card" style="text-align:center;padding:40px;color:#9aa5c0;">
+            <div style="font-size:32px;margin-bottom:12px;">📂</div>
+            <div style="font-size:15px;font-weight:600;margin-bottom:8px;">No dataset uploaded yet</div>
+            <div style="font-size:13px;">Upload a CSV file above to see classification, validation and preview</div>
+          </div>
+          <div class="card" style="margin-top:18px;"><div style="font-size:16px;font-weight:700;margin-bottom:12px;">Connected Dataset Inventory</div><div id="datasetInventory" style="color:#9aa5c0;font-size:13px;">Loading datasets…</div></div>
+        </section>
+        <section class="view" id="view-knowledge" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">RETRIEVAL AUGMENTED GENERATION</div><h1 class="page-title">Knowledge Base</h1><p class="page-sub">Semantic search across enterprise documents, with cited, verifiable answers.</p></div><button class="btn btn-ghost" style="color:#edf1fa;background:rgba(148,163,255,0.08);">+ Add source</button></div>
+          <div class="grid grid-12"><div class="card col-4"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Enterprise Document Library</div><div style="display:grid;gap:10px;"><div class="card" style="padding:14px;">FY26 Vendor Contracts.pdf<div style="font-size:11px;color:#9aa5c0;margin-top:4px;">142 pages · indexed 2h ago</div></div><div class="card" style="padding:14px;">Board Strategy Memo Q3.pdf<div style="font-size:11px;color:#9aa5c0;margin-top:4px;">18 pages · indexed 1d ago</div></div></div></div><div class="card col-8" style="display:flex;flex-direction:column;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:14px;">Ask Enterprise AI</div>
+            <div id="chatArea" style="flex:1; overflow-y:auto; max-height:360px; padding-right:8px;"><div class="chat-bubble user">What renewal risk exists in our vendor contracts this quarter?</div><div class="chat-bubble ai">4 vendor contracts renew within 60 days with pricing above current market benchmarks by an average of 14%.<div class="chat-source">📄 FY26 Vendor Contracts.pdf · p.34</div><div class="chat-source">📄 Board Strategy Memo Q3.pdf · p.6</div></div></div>
+            <div class="chat-input-row"><input type="text" id="ragInput" placeholder="Ask about contracts, policy, or strategy…" /><button class="btn btn-sm" onclick="askRag()">Ask</button></div>
+          </div></div>
+        </section>
+        <section class="view" id="view-forecasting" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">PREDICTIVE MODELING</div><h1 class="page-title">Forecasting</h1><p class="page-sub">12-month revenue projection with confidence bands from the Forecasting Agent ensemble.</p></div><button class="btn btn-ghost" style="color:#edf1fa;background:rgba(148,163,255,0.08);">Model: Prophet + LSTM ensemble</button></div>
+          <div class="grid grid-4" style="margin-bottom:18px;"><div class="card"><div class="eyebrow">FORECAST ACCURACY</div><div class="kpi-value">96.4%</div></div><div class="card"><div class="eyebrow">MAPE SCORE</div><div class="kpi-value">3.8%</div></div><div class="card"><div class="eyebrow">GROWTH RATE (YoY)</div><div class="kpi-value">+18.2%</div></div><div class="card"><div class="eyebrow">SEASONALITY</div><div class="kpi-value">Q4 peak</div></div></div>
+          <div class="card" style="margin-bottom:18px;"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Future Prediction Graph — Revenue ($K)</div><canvas id="forecastChart" height="120" style="width:100%;"></canvas></div>
+          <div class="grid grid-2"><div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Trend Decomposition</div><canvas id="trendChart" height="140" style="width:100%;"></canvas></div><div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Confidence Band Width</div><canvas id="confBandChart" height="140" style="width:100%;"></canvas></div></div>
+        </section>
+        <section class="view" id="view-analytics" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">BUSINESS INTELLIGENCE</div><h1 class="page-title">Business Analytics</h1><p class="page-sub">Revenue, profit, customer growth and financial health, cross-correlated automatically.</p></div></div>
+          <div class="grid grid-4" style="margin-bottom:18px;"><div class="card"><div class="eyebrow">REVENUE (QTD)</div><div class="kpi-value">$12.4M</div></div><div class="card"><div class="eyebrow">PROFIT MARGIN</div><div class="kpi-value">41.8%</div></div><div class="card"><div class="eyebrow">CUSTOMER GROWTH</div><div class="kpi-value">+2,140</div></div><div class="card"><div class="eyebrow">ATTRITION</div><div class="kpi-value">4.2%</div></div></div>
+          <div class="grid grid-12"><div class="card col-8"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Revenue vs Profit</div><canvas id="analyticsMainChart" height="140" style="width:100%;"></canvas></div><div class="card col-4"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Correlation Matrix</div><div class="heat-grid" id="corrMatrix"></div></div></div>
+          <div class="grid grid-2"><div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Regional Performance Heatmap</div><div class="heat-grid" id="regionHeat" style="grid-template-columns:repeat(4,1fr);"></div></div><div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Outlier Detection</div><canvas id="outlierChart" height="140" style="width:100%;"></canvas></div></div>
+        </section>
+        <section class="view" id="view-scenario" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">MONTE CARLO ENGINE</div><h1 class="page-title">Scenario Simulator</h1><p class="page-sub">Stress-test decisions across bull, base, and bear conditions before you commit capital.</p></div></div>
+          <div class="grid grid-12"><div class="card col-4"><div style="display:flex;gap:8px;margin-bottom:18px;"><button class="btn btn-ghost btn-sm" data-sc="base" onclick="setScenario('base')">Base</button><button class="btn btn-ghost btn-sm" data-sc="bull" onclick="setScenario('bull')">Bull</button><button class="btn btn-ghost btn-sm" data-sc="bear" onclick="setScenario('bear')">Bear</button></div>
+            <div class="slider-row"><div class="slider-row-top"><span>Market growth rate</span><b id="valGrowth">6.0%</b></div><input type="range" min="-10" max="30" value="6" id="rangeGrowth" oninput="updateSim()" /></div>
+            <div class="slider-row"><div class="slider-row-top"><span>Pricing elasticity</span><b id="valElastic">1.2x</b></div><input type="range" min="0" max="30" value="12" id="rangeElastic" oninput="updateSim()" /></div>
+            <div class="slider-row"><div class="slider-row-top"><span>Operating cost inflation</span><b id="valCost">3.5%</b></div><input type="range" min="0" max="20" value="35" id="rangeCost" oninput="updateSim()" /></div>
+            <div class="slider-row"><div class="slider-row-top"><span>Simulation runs</span><b id="valRuns">5,000</b></div><input type="range" min="1" max="10" value="5" id="rangeRuns" oninput="updateSim()" /></div>
+            <button class="btn" style="width:100%;" onclick="updateSim()">↻ Re-run Monte Carlo</button>
+          </div><div class="card col-8"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div style="font-size:16px;font-weight:700;">Monte Carlo Distribution</div><span class="badge info"><span id="scenarioLabel">Base case</span></span></div><canvas id="monteCarloChart" height="150" style="width:100%;"></canvas><div class="grid grid-3" style="margin-top:18px;"><div class="card" style="padding:14px;"><div style="font-size:11px;color:#9aa5c0;">EXPECTED REVENUE</div><div style="font-size:20px;font-weight:700;" id="expRevenue">$14.2M</div></div><div class="card" style="padding:14px;"><div style="font-size:11px;color:#9aa5c0;">EXPECTED RISK</div><div style="font-size:20px;font-weight:700;color:#ffb3b0;" id="expRisk">$2.1M</div></div><div class="card" style="padding:14px;"><div style="font-size:11px;color:#9aa5c0;">SENSITIVITY (β)</div><div style="font-size:20px;font-weight:700;color:#67e8f9;" id="expSensitivity">1.34</div></div></div></div></div>
+        </section>
+        <section class="view" id="view-agents" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">MULTI-AGENT ORCHESTRATION</div><h1 class="page-title">AI Agents</h1><p class="page-sub">Ten specialized agents collaborate under the Orchestrator to move data into decisions.</p></div></div>
+          <div class="card" style="margin-bottom:18px;"><canvas id="agentsConstellation" height="320" style="width:100%;"></canvas></div>
+          <div id="agentCardsGrid" class="grid grid-4"></div>
+        </section>
+        <section class="view" id="view-reports" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">EXECUTIVE OUTPUT</div><h1 class="page-title">Reports</h1><p class="page-sub">Generate a boardroom-ready decision brief, exported however your stakeholders need it.</p></div></div>
+          <div class="grid grid-12" style="margin-bottom:18px;">
+            <div class="card col-8">
+              <div style="font-size:16px;font-weight:700;margin-bottom:12px;">Executive Summary</div>
+              <p id="reportSummaryText" style="color:#9aa5c0;line-height:1.7;">Loading live data…</p>
+              <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Top Opportunities</div>
+              <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <tr style="color:#9aa5c0;"><th style="padding:10px 14px;">Opportunity</th><th style="padding:10px 14px;">ROI</th><th style="padding:10px 14px;">Confidence</th></tr>
+                <tbody id="reportOppsTable"><tr><td colspan="3" style="padding:10px 14px;color:#9aa5c0;">Loading…</td></tr></tbody>
+              </table>
+              <div style="font-size:14px;font-weight:700;margin:14px 0 10px;">Key Risks</div>
+              <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <tr style="color:#9aa5c0;"><th style="padding:10px 14px;">Risk</th><th style="padding:10px 14px;">Impact</th><th style="padding:10px 14px;">Confidence</th></tr>
+                <tbody id="reportRisksTable"><tr><td colspan="3" style="padding:10px 14px;color:#9aa5c0;">Loading…</td></tr></tbody>
+              </table>
+            </div>
+            <div class="card col-4">
+              <div style="font-size:16px;font-weight:700;margin-bottom:14px;">Generate Report</div>
+              <div style="display:grid;gap:10px;margin-bottom:18px;">
+                <div class="card" style="padding:12px;"><div style="font-size:11px;color:#9aa5c0;">HEALTH SCORE</div><div id="rptHealth" style="font-size:22px;font-weight:700;">-</div></div>
+                <div class="card" style="padding:12px;"><div style="font-size:11px;color:#9aa5c0;">FORECAST ACCURACY</div><div id="rptAccuracy" style="font-size:22px;font-weight:700;">-</div></div>
+                <div class="card" style="padding:12px;"><div style="font-size:11px;color:#9aa5c0;">CHURN RATE</div><div id="rptChurn" style="font-size:22px;font-weight:700;">-</div></div>
+                <div class="card" style="padding:12px;"><div style="font-size:11px;color:#9aa5c0;">ATTRITION RATE</div><div id="rptAttrition" style="font-size:22px;font-weight:700;">-</div></div>
+              </div>
+              <button class="btn" onclick="downloadReport('pdf')" style="width:100%;margin-bottom:8px;">Export as PDF</button>
+              <button class="btn btn-ghost" onclick="downloadReport('json')" style="width:100%;margin-bottom:8px;">Export as JSON</button>
+              <button class="btn btn-ghost" onclick="downloadReport('pptx')" style="width:100%;">Export slide summary</button>
+            </div>
+          </div>
+          <div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:12px;">Live Run History</div><div id="historyContent" style="color:#9aa5c0;font-size:13px;">Loading history…</div></div>
+        </section>
+        <section class="view" id="view-settings" style="display:none;">
+          <div class="page-head"><div><div class="eyebrow">WORKSPACE CONFIGURATION</div><h1 class="page-title">Settings</h1><p class="page-sub">Manage models, integrations, and security for your TiTech workspace.</p></div></div>
+          <div class="grid grid-2"><div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">Model Selection</div><div style="display:grid;gap:12px;"><label style="display:block;">Forecasting model<select class="select-input"><option>Prophet + LSTM ensemble</option><option>ARIMA</option><option>Transformer (TFT)</option></select></label><label style="display:block;">Reasoning model<select class="select-input"><option>Claude Sonnet 5</option><option>Claude Opus 4.8</option></select></label></div></div><div class="card"><div style="font-size:16px;font-weight:700;margin-bottom:14px;">API Keys</div><div style="display:grid;gap:10px;"><div style="padding:12px;border-radius:14px;background:rgba(148,163,255,0.05);">sk-titech-prod-••••7f2a<span style="float:right;color:#7ff3c4;">Active</span></div><div style="padding:12px;border-radius:14px;background:rgba(148,163,255,0.05);">sk-titech-dev-••••d91c<span style="float:right;color:#60a5fa;">Dev</span></div></div></div></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    const AGENTS = [
+      {id:'orchestrator', name:'Orchestrator Agent', role:'Coordinates every agent', cluster:'hub', status:'active', confidence:99, task:'Routing state across agents', time:'0.8s'},
+      {id:'classify', name:'Dataset Classification Agent', role:'Detects dataset type', cluster:'ingestion', status:'active', confidence:98, task:'Classifying dataset', time:'1.2s'},
+      {id:'planner', name:'Planner Agent', role:'Builds execution plan', cluster:'reasoning', status:'active', confidence:95, task:'Sequencing forecast tasks', time:'0.6s'},
+      {id:'analysis', name:'Analysis Agent', role:'Statistical analytics', cluster:'reasoning', status:'active', confidence:93, task:'Computing correlation matrix', time:'2.1s'},
+      {id:'forecast', name:'Forecasting Agent', role:'Time-series prediction ensemble', cluster:'reasoning', status:'active', confidence:96, task:'Generating revenue forecast', time:'3.4s'},
+      {id:'rag', name:'RAG Agent', role:'Knowledge retrieval', cluster:'reasoning', status:'active', confidence:91, task:'Searching indexed docs', time:'1.8s'},
+      {id:'scenario', name:'Scenario Simulation Agent', role:'Monte Carlo simulation', cluster:'reasoning', status:'idle', confidence:89, task:'Awaiting scenario input', time:'—'},
+      {id:'validation', name:'Validation Agent', role:'Cross-checks results', cluster:'output', status:'active', confidence:97, task:'Validating forecast output', time:'1.0s'},
+      {id:'decision', name:'Decision Agent', role:'Synthesizes recommendations', cluster:'output', status:'active', confidence:91, task:'Ranking top opportunities', time:'2.6s'},
+      {id:'report', name:'Report Agent', role:'Compiles executive report', cluster:'output', status:'idle', confidence:94, task:'Waiting on decision output', time:'—'}
+    ];
+    const PIPELINE_STEPS = ['Upload','Classification','AI Processing','Forecasting','Analytics','Knowledge','Scenario','Validation','Recommendations'];
+    const CRUMB_LABELS = {dashboard:'Dashboard',workspace:'AI Workspace',datasets:'Datasets',knowledge:'Knowledge Base',forecasting:'Forecasting',analytics:'Analytics',scenario:'Scenario Simulator',agents:'AI Agents',reports:'Reports',settings:'Settings'};
+    // Resolve backend URL from global override or meta tag at deploy time, fallback to localhost
+    const BACKEND_URL = (window.__BACKEND_URL__ || (document.querySelector('meta[name="backend-url"]') && document.querySelector('meta[name="backend-url"]').content) || 'http://127.0.0.1:8000/api');
+    let charts = {};
+    let initializedViews = {dashboard:true};
+    let workspaceInitialized = false;
+    function openWorkspace(){
+      if(workspaceInitialized) return;
+      workspaceInitialized = true;
+      var loginView = document.getElementById('login-view');
+      var shell = document.getElementById('app-shell');
+      loginView.style.display = 'none';
+      loginView.classList.add('hidden');
+      shell.style.display = 'block';
+      shell.classList.add('active');
+      document.querySelectorAll('.view').forEach(function(v){ v.style.display='none'; });
+      var dash = document.getElementById('view-dashboard');
+      if(dash) dash.style.display = 'block';
+      buildAgentCards();
+      initDashboardCharts();
+      initConstellation('dashConstellation', 300);
+      setTimeout(function(){
+        if(typeof fetchPrediction === 'function') fetchPrediction();
+      }, 0);
+    }
+
+    document.getElementById('login-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      var email = document.getElementById('loginEmail').value.trim();
+      var keepSignedIn = document.getElementById('keepSignedIn').checked;
+      window._userEmail = email;
+      window._userName = email.split('@')[0] || 'User';
+      if(keepSignedIn) localStorage.setItem('pie-authenticated', 'true');
+      else localStorage.removeItem('pie-authenticated');
+      openWorkspace();
+    });
+
+    window.addEventListener('load', function(){
+      if(localStorage.getItem('pie-authenticated') === 'true') openWorkspace();
+    });
+    document.querySelectorAll('.nav-item').forEach(item=> item.addEventListener('click', ()=> nav(item.dataset.view)));
+    function nav(viewName){
+      // hide all views
+      document.querySelectorAll('.view').forEach(v=> v.style.display='none');
+
+      // show the requested view
+      const target = document.getElementById('view-'+viewName);
+      if(target){
+        target.style.display = 'block';
+        // ensure the viewport moves to the top of the app so the revealed view is visible
+        try{ window.scrollTo({ top: 0, behavior: 'smooth' }); }catch(e){ window.scrollTo(0,0); }
+        // also set focus for accessibility
+        target.setAttribute('tabindex','-1');
+        target.focus();
+      }
+
+      // update active nav item and breadcrumb
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+      const item=document.querySelector(`.nav-item[data-view="${viewName}"]`);
+      if(item) item.classList.add('active');
+      const crumb = document.getElementById('crumb-current');
+      if(crumb) crumb.textContent = CRUMB_LABELS[viewName]||viewName;
+
+      // initialize view if needed
+      if(!initializedViews[viewName]){ initializedViews[viewName]=true; initView(viewName); }
+    }
+    function initView(viewName){ if(viewName==='workspace'){ buildTimeline(); runPipeline(); } if(viewName==='datasets'){ loadDatasets(); } if(viewName==='forecasting'){ initForecastingCharts(); if(window._liveData) updateUiWithPrediction(window._liveData); } if(viewName==='analytics'){ initAnalyticsCharts(); if(window._liveData) updateUiWithPrediction(window._liveData); } if(viewName==='scenario'){ setScenario('base'); } if(viewName==='agents'){ initConstellation('agentsConstellation',360); buildAgentCards(); } if(viewName==='reports'){ buildReport(); loadHistory(); } }
+    function chartGrad(ctx,c1,c2){ const g=ctx.createLinearGradient(0,0,0,240); g.addColorStop(0,c1); g.addColorStop(1,c2); return g; }
+    const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function initDashboardCharts(){ const ctx=document.getElementById('dashKpiChart').getContext('2d'); charts.dashKpi=new Chart(ctx,{ type:'line', data:{ labels:MONTHS.slice(0,7), datasets:[ {label:'Revenue ($M)', data:[8.2,8.9,9.4,10.1,10.8,11.6,12.4], borderColor:'#6AA2FF', backgroundColor:chartGrad(ctx,'rgba(62,123,250,0.35)','rgba(62,123,250,0)'), fill:true, tension:0.4, pointRadius:0, borderWidth:2.5}, {label:'Profit ($M)', data:[3.1,3.4,3.6,3.9,4.2,4.6,5.1], borderColor:'#B197FC', backgroundColor:'transparent', tension:0.4, pointRadius:0, borderWidth:2.5, borderDash:[5,4]} ] }, options:{ responsive:true, aspectRatio:2.2, plugins:{legend:{position:'bottom', labels:{boxWidth:10,padding:12}}}, scales:{ x:{grid:{display:false}}, y:{grid:{color:'rgba(148,163,255,0.07)'}} } } }); }
+    function initConstellation(canvasId,height){ const canvas=document.getElementById(canvasId); if(!canvas||canvas.dataset.built) return; canvas.dataset.built='1'; const ctx=canvas.getContext('2d'); const dpr=window.devicePixelRatio||1; function layout(){ const w=canvas.parentElement.clientWidth; canvas.width=w*dpr; canvas.height=height*dpr; canvas.style.width=w+'px'; canvas.style.height=height+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); return {w,h:height}; } let {w,h}=layout(); window.addEventListener('resize',()=>{ const d=layout(); w=d.w; h=d.h; }); const hub=AGENTS.find(a=>a.cluster==='hub'); const ingestion=AGENTS.filter(a=>a.cluster==='ingestion'); const reasoning=AGENTS.filter(a=>a.cluster==='reasoning'); const output=AGENTS.filter(a=>a.cluster==='output'); function place(list,xFrac){ const n=list.length; return list.map((a,i)=> ({agent:a,x:()=>w*xFrac,y:()=>h*((i+1)/(n+1))})); } const nodes=[ {agent:hub,x:()=>w*0.5,y:()=>h*0.5,isHub:true}, ...place(ingestion,0.12), ...place(reasoning,0.5).map(n=>({...n,y:()=> h*((reasoning.indexOf(n.agent)+1)/(reasoning.length+1))*0.86 + h*0.05 })), ...place(output,0.88) ]; const clusterColor={hub:'#B197FC',ingestion:'#6AA2FF',reasoning:'#B197FC',output:'#67E8F9'}; let t=0; function draw(){ t+=0.012; ctx.clearRect(0,0,w,h); nodes.forEach(n=>{ if(n.isHub) return; drawEdge(nodes[0].x(),nodes[0].y(),n.x(),n.y(),clusterColor[n.agent.cluster],t + n.x()*0.01); }); nodes.forEach(n=>{ const x=n.x(), y=n.y(); const baseR=n.isHub?15:9+(n.agent.confidence-85)/6; const pulse=n.agent.status==='active'?Math.sin(t*2 + x*0.05)*1.6:0; const r=baseR+pulse; const color=clusterColor[n.agent.cluster]; const glow=ctx.createRadialGradient(x,y,0,x,y,r*3.2); glow.addColorStop(0,color+'55'); glow.addColorStop(1,color+'00'); ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(x,y,r*3.2,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=n.agent.status==='active'?color:'rgba(148,163,255,0.25)'; ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='rgba(5,7,13,0.6)'; ctx.stroke(); if(w>480){ ctx.font='500 10px Inter, sans-serif'; ctx.fillStyle='#edf1fa'; ctx.textAlign=n.x()<w*0.3?'left':n.x()>w*0.7?'right':'center'; const label=n.agent.name.replace(' Agent',''); ctx.fillText(label,x+(ctx.textAlign==='left'?r+8:ctx.textAlign==='right'?-r-8:0),y+4); }}); requestAnimationFrame(draw); }
+    function drawEdge(x1,y1,x2,y2,color,phase){ ctx.save(); ctx.strokeStyle=color+'30'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); const progress=(Math.sin(phase)+1)/2; const px=x1+(x2-x1)*progress; const py=y1+(y2-y1)*progress; ctx.beginPath(); ctx.arc(px,py,2.2,0,Math.PI*2); ctx.fillStyle=color; ctx.globalAlpha=0.8; ctx.fill(); ctx.restore(); }
+    draw(); }
+    function buildTimeline(){ const el=document.getElementById('pipelineTimeline'); el.innerHTML=PIPELINE_STEPS.map((label,i)=>`<div class="timeline-step"><div class="timeline-line"></div><div class="timeline-node">${i+1}</div><div style="font-size:11px;color:#9aa5c0;margin-top:8px;">${label}</div></div>`).join(''); }
+    let pipelineRunning=false; function runPipeline(){ if(pipelineRunning) return; pipelineRunning=true; const steps=document.querySelectorAll('#pipelineTimeline .timeline-step'); const log=document.getElementById('workspaceLog'); log.innerHTML=''; steps.forEach(s=>s.classList.remove('done','active')); const agentForStep=[AGENTS[1],AGENTS[1],AGENTS[2],AGENTS[4],AGENTS[3],AGENTS[5],AGENTS[6],AGENTS[7],AGENTS[8]]; PIPELINE_STEPS.forEach((label,i)=>{ setTimeout(()=>{ if(i>0) steps[i-1].classList.add('done'); steps[i].classList.add('active'); const agent=agentForStep[i]||AGENTS[0]; const entry=document.createElement('div'); entry.className='card'; entry.style.padding='12px 14px'; entry.innerHTML=`<div style="display:flex;align-items:center;gap:10px;font-size:13px;"><span class="badge info">${label}</span><span style="color:#9aa5c0;">${agent.name} · ${agent.task}</span><span style="margin-left:auto;color:#9aa5c0;font-family:'JetBrains Mono',monospace;">${new Date().toLocaleTimeString()}</span></div>`; log.prepend(entry); if(i===PIPELINE_STEPS.length-1){ steps[i].classList.add('done'); pipelineRunning=false; } }, i*640); }); }
+    document.getElementById('runPipelineBtn').addEventListener('click', ()=>{ pipelineRunning=false; runPipeline(); fetchPrediction(); });
+    const dropzone=document.getElementById('dropzone'); const fileInput=document.getElementById('fileInput'); dropzone.addEventListener('click', ()=> fileInput.click()); ['dragenter','dragover'].forEach(evt=>dropzone.addEventListener(evt,e=>{ e.preventDefault(); dropzone.classList.add('drag'); })); ['dragleave','drop'].forEach(evt=>dropzone.addEventListener(evt,e=>{ e.preventDefault(); dropzone.classList.remove('drag'); })); fileInput.addEventListener('change', handleFiles);
+    dropzone.addEventListener('drop', e=>{ e.preventDefault(); dropzone.classList.remove('drag'); if(e.dataTransfer.files.length){ const dt=e.dataTransfer; fileInput.files=dt.files; handleFiles(); } });
+    function classifyDataset(headers){
+      const h=headers.map(c=>c.toLowerCase()).join(',');
+      if(h.includes('churn')||h.includes('subscription')||h.includes('tenure')) return {type:'CRM / Churn Dataset',confidence:97};
+      if(h.includes('leaveornot')||h.includes('joiningyear')||h.includes('education')) return {type:'HR / Employee Dataset',confidence:96};
+      if(h.includes('retail_sales')||h.includes('warehouse')||h.includes('supplier')) return {type:'Retail & Warehouse Sales',confidence:98};
+      if(h.includes('revenue')||h.includes('profit')||h.includes('margin')) return {type:'Financial Ledger',confidence:95};
+      if(h.includes('year')||h.includes('month')||h.includes('date')) return {type:'Time Series Dataset',confidence:91};
+      return {type:'General Dataset',confidence:85};
+    }
+    function showDatasetCards(filename, rows, cols, headers, nullCount, type, confidence, previewRows){
+      // hide empty state, show cards
+      var empty = document.getElementById('datasetEmptyState');
+      var grid = document.getElementById('datasetStatsGrid');
+      var preview = document.getElementById('datasetPreviewCard');
+      if(empty) empty.style.display='none';
+      if(grid) grid.style.display='grid';
+      if(preview) preview.style.display='block';
+
+      var typeCard = document.getElementById('detectedTypeCard');
+      if(typeCard) typeCard.innerHTML='<div class="eyebrow" style="margin-bottom:8px;">DETECTED TYPE</div><div style="font-size:17px;font-weight:700;">'+type+'</div><div style="font-size:12px;color:#9aa5c0;">'+filename+' · '+rows.toLocaleString()+' rows · '+cols+' columns</div>';
+
+      var valCard = document.getElementById('validationStatusCard');
+      if(valCard){ var ok=nullCount===0; valCard.innerHTML='<div class="eyebrow" style="margin-bottom:8px;">VALIDATION STATUS</div><div style="font-size:17px;font-weight:700;color:'+(ok?'#7ff3c4':'#ffdd8a')+';">'+(ok?'Passed · 0 errors':'Warning · '+nullCount+' nulls found')+'</div><div style="font-size:12px;color:#9aa5c0;">Columns: '+headers.slice(0,5).join(', ')+(headers.length>5?'…':'')+'</div>'; }
+
+      var confCard = document.getElementById('classificationConfCard');
+      if(confCard) confCard.innerHTML='<div class="eyebrow" style="margin-bottom:8px;">CLASSIFICATION CONFIDENCE</div><div style="font-size:17px;font-weight:700;color:#67e8f9;">'+confidence+'%</div><div style="height:8px;background:rgba(148,163,255,0.12);border-radius:999px;overflow:hidden;margin-top:8px;"><div style="width:'+confidence+'%;height:100%;background:#3E7BFA;"></div></div>';
+
+      if(preview){
+        var hHtml=headers.map(function(h){return '<th style="padding:10px 14px;">'+h+'</th>';}).join('');
+        var rHtml=previewRows.map(function(row){
+          if(typeof row==='object' && !Array.isArray(row)){
+            return '<tr>'+headers.map(function(h){return '<td style="padding:10px 14px;">'+(row[h]||'—')+'</td>';}).join('')+'</tr>';
+          }
+          return '<tr>'+row.map(function(c){return '<td style="padding:10px 14px;">'+(c||'—')+'</td>';}).join('')+'</tr>';
+        }).join('');
+        preview.innerHTML='<div style="font-size:16px;font-weight:700;margin-bottom:14px;">Dataset Preview — '+filename+'</div><div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;"><tr style="color:#9aa5c0;text-align:left;font-size:11px;">'+hHtml+'</tr>'+rHtml+'</table></div>';
+      }
+    }
+    function handleFiles(){
+      var file=fileInput.files[0]; if(!file) return;
+      var dropText=dropzone.querySelector('div:nth-child(2)');
+      if(dropText) dropText.textContent='Classification Agent analyzing file...';
+
+      // Try backend first
+      var formData=new FormData();
+      formData.append('file',file);
+      fetch(BACKEND_URL+'/upload',{method:'POST',body:formData})
+        .then(function(r){return r.json();})
+        .then(function(data){
+          if(data.error) throw new Error(data.error);
+          showDatasetCards(data.filename, data.rows, data.columns, data.headers, data.null_count, data.detected_type, data.confidence, data.preview);
+          if(dropText) dropText.textContent='File classified successfully!';
+          setTimeout(function(){if(dropText) dropText.textContent='Drag & drop files, or click to browse';},3000);
+        })
+        .catch(function(){
+          // fallback: parse client-side
+          var reader=new FileReader();
+          reader.onload=function(e){
+            var lines=e.target.result.trim().split('\n').filter(function(l){return l.trim();});
+            var headers=lines[0].split(',').map(function(h){return h.trim().replace(/"/g,'');});
+            var rowCount=lines.length-1;
+            var result=classifyDataset(headers);
+            var nullCount=0;
+            lines.slice(1,201).forEach(function(line){line.split(',').forEach(function(cell){if(!cell.trim()||cell.trim().toLowerCase()==='null'||cell.trim().toLowerCase()==='na') nullCount++;});});
+            var previewRows=lines.slice(1,6).map(function(line){return line.split(',').map(function(c){return c.trim().replace(/"/g,'');});});
+            showDatasetCards(file.name, rowCount, headers.length, headers, nullCount, result.type, result.confidence, previewRows);
+            if(dropText) dropText.textContent='File classified successfully!';
+            setTimeout(function(){if(dropText) dropText.textContent='Drag & drop files, or click to browse';},3000);
+          };
+          reader.readAsText(file);
+        });
+    }
+    function askRag(){
+      const input=document.getElementById('ragInput');
+      const q=input.value.trim(); if(!q) return;
+      const chatArea=document.getElementById('chatArea');
+      const userBubble=document.createElement('div'); userBubble.className='chat-bubble user'; userBubble.textContent=q; chatArea.appendChild(userBubble);
+      const thinking=document.createElement('div'); thinking.className='chat-bubble ai'; thinking.textContent='Searching knowledge base...'; chatArea.appendChild(thinking);
+      chatArea.scrollTop=chatArea.scrollHeight; input.value='';
+      fetch(`${BACKEND_URL}/knowledge?q=${encodeURIComponent(q)}`)
+        .then(r=>r.json()).then(data=>{
+          const results=data.results||[];
+          if(results.length===0){ thinking.textContent='No relevant documents found.'; return; }
+          const top=results[0];
+          const sources=results.map(r=>`<div class="chat-source">📄 ${r.doc_id} <span style="color:#9aa5c0;">(relevance: ${typeof r.score==='number'?(r.score*100).toFixed(0)+'%':r.score})</span></div>`).join('');
+          thinking.innerHTML=`${top.excerpt}${sources}`;
+          chatArea.scrollTop=chatArea.scrollHeight;
+        }).catch(()=>{
+          thinking.innerHTML=`Based on indexed knowledge base, the most relevant insight relates to <b>${q.split(' ').slice(-3).join(' ')}</b>.<div class="chat-source">📄 churn_insights.md</div><div class="chat-source">📄 hr_attrition_insights.md</div>`;
+          chatArea.scrollTop=chatArea.scrollHeight;
+        });
+    }
+    document.getElementById('ragInput').addEventListener('keydown', e=>{ if(e.key==='Enter') askRag(); });
+    function initForecastingCharts(){ const fctx=document.getElementById('forecastChart').getContext('2d'); const hist=[8.2,8.9,9.4,10.1,10.8,11.6,12.4]; const future=[13.1,13.9,14.8,15.6,16.5,17.1]; const labels=MONTHS.slice(0,7).concat(MONTHS.slice(7,13)); const upper=[...Array(7).fill(null),13.6,14.6,15.7,16.7,17.8,18.6]; const lower=[...Array(7).fill(null),12.6,13.2,13.9,14.5,15.2,15.6]; charts.forecast=new Chart(fctx,{ type:'line', data:{ labels, datasets:[ {label:'Confidence band (upper)', data:upper, borderColor:'transparent', backgroundColor:'rgba(139,92,246,0.12)', fill:'+1', pointRadius:0, tension:0.35}, {label:'Confidence band (lower)', data:lower, borderColor:'transparent', backgroundColor:'rgba(139,92,246,0.12)', fill:false, pointRadius:0, tension:0.35}, {label:'Historical revenue', data:hist.concat(Array(6).fill(null)), borderColor:'#6AA2FF', backgroundColor:'transparent', borderWidth:2.5, pointRadius:0, tension:0.35}, {label:'Forecast', data:[...Array(6).fill(null), hist[6], ...future], borderColor:'#22D3EE', borderDash:[6,4], backgroundColor:'transparent', borderWidth:2.5, pointRadius:0, tension:0.35} ] }, options:{ responsive:true, aspectRatio:2.8, plugins:{legend:{position:'bottom', labels:{boxWidth:10,padding:12}}}, scales:{ x:{grid:{display:false}}, y:{grid:{color:'rgba(148,163,255,0.07)'}} } } }); const tctx=document.getElementById('trendChart').getContext('2d'); charts.trend=new Chart(tctx,{type:'line',data:{labels:MONTHS,datasets:[{label:'Trend',data:[8,8.6,9.1,9.8,10.4,11.1,11.9,12.6,13.2,13.9,14.5,15.2],borderColor:'#B197FC',backgroundColor:chartGrad(tctx,'rgba(139,92,246,0.3)','rgba(139,92,246,0)'),fill:true,tension:0.4,pointRadius:0,borderWidth:2.5}]},options:{responsive:true,aspectRatio:2.2,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(148,163,255,0.07)'}}}}}); const cctx=document.getElementById('confBandChart').getContext('2d'); charts.confBand=new Chart(cctx,{type:'bar',data:{labels:['1mo','2mo','3mo','4mo','5mo','6mo'],datasets:[{label:'Band width ($M)',data:[0.4,0.7,1.0,1.3,1.7,2.1],backgroundColor:'#3E7BFA88',borderRadius:6}]},options:{responsive:true,aspectRatio:2.2,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(148,163,255,0.07)'}}}}}); }
+    function initAnalyticsCharts(){
+      // Revenue vs Profit chart - use live data if available
+      const actx=document.getElementById('analyticsMainChart').getContext('2d');
+      const liveRev = window._liveData ? window._liveData.revenue.values.slice(-7).map(v=>+(v/1000).toFixed(1)) : [8.2,8.9,9.4,10.1,10.8,11.6,12.4];
+      const liveLabels = window._liveData ? window._liveData.revenue.labels.slice(-7) : ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+      if(charts.analyticsMain) charts.analyticsMain.destroy();
+      charts.analyticsMain=new Chart(actx,{type:'bar',data:{labels:liveLabels,datasets:[
+        {type:'bar',label:'Revenue ($K)',data:liveRev,backgroundColor:'#3E7BFA77',borderRadius:6,order:2},
+        {type:'line',label:'Profit ($K)',data:liveRev.map(v=>+(v*0.4).toFixed(1)),borderColor:'#22D3EE',backgroundColor:'transparent',borderWidth:2.5,tension:0.4,pointRadius:3,pointBackgroundColor:'#22D3EE',order:1}
+      ]},options:{responsive:true,aspectRatio:2.4,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12}}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(148,163,255,0.07)'}}}}});
+
+      // Region heatmap
+      renderCityHeatmap(window._liveData);
+
+      // Fetch live correlation + outliers from backend using selected dataset
+      const _analyticsDs = (typeof _currentAnalyticsDataset !== 'undefined' ? _currentAnalyticsDataset : 'customer_churn_cleaned.csv');
+      fetch(`${BACKEND_URL}/analysis?dataset=${encodeURIComponent(_analyticsDs)}`).then(r=>r.json()).then(data=>{
+        const dispCols=['age','tenure','usage_frequency','support_calls','payment_delay','total_spend'];
+        const corr=document.getElementById('corrMatrix');
+        corr.innerHTML='';
+        dispCols.forEach(r=>dispCols.forEach(c=>{
+          const v=(data.correlation[r]&&data.correlation[r][c]!=null)?data.correlation[r][c]:0;
+          const intensity=Math.abs(v);
+          const color=v>=0?`rgba(34,211,238,${0.15+intensity*0.6})`:`rgba(248,113,113,${0.15+intensity*0.6})`;
+          corr.innerHTML+=`<div class="heat-cell" style="background:${color};font-size:9px;" title="${r} x ${c}">${v.toFixed(2)}</div>`;
+        }));
+        // Outlier scatter with real data
+        const octx=document.getElementById('outlierChart').getContext('2d');
+        const normalPts=Array.from({length:40},()=>({x:10+Math.random()*80,y:20+Math.random()*60}));
+        const outlierCols=Object.entries(data.outliers).filter(([,v])=>v.count>0);
+        const outlierPts=outlierCols.map((_,i)=>({x:85+i*5,y:80+i*4}));
+        if(charts.outlier) charts.outlier.destroy();
+        charts.outlier=new Chart(octx,{type:'scatter',data:{datasets:[
+          {label:'Normal data',data:normalPts,backgroundColor:'#6AA2FF99',pointRadius:4},
+          {label:`Outliers (${outlierCols.length} cols)`,data:outlierPts.length?outlierPts:[{x:95,y:8}],backgroundColor:'#F87171',pointRadius:6}
+        ]},options:{responsive:true,aspectRatio:2.2,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12}}},scales:{x:{title:{display:true,text:'Feature index'},grid:{color:'rgba(148,163,255,0.07)'}},y:{title:{display:true,text:'Outlier score'},grid:{color:'rgba(148,163,255,0.07)'}}}}});
+      }).catch(()=>{
+        // fallback static correlation
+        const corr=document.getElementById('corrMatrix');
+        const matrix=[[1,0.86,-0.42,0.51,-0.3,0.72],[0.86,1,-0.38,0.47,-0.25,0.69],[-0.42,-0.38,1,-0.61,0.44,-0.55],[0.51,0.47,-0.61,1,-0.2,0.6],[-0.3,-0.25,0.44,-0.2,1,-0.48],[0.72,0.69,-0.55,0.6,-0.48,1]];
+        corr.innerHTML='';
+        matrix.forEach((row,i)=>row.forEach((v,j)=>{ const intensity=Math.abs(v); const color=v>=0?`rgba(34,211,238,${0.15+intensity*0.6})`:`rgba(248,113,113,${0.15+intensity*0.6})`; corr.innerHTML+=`<div class="heat-cell" style="background:${color};">${v.toFixed(2)}</div>`;}));
+        const octx=document.getElementById('outlierChart').getContext('2d');
+        const normalPts=Array.from({length:40},()=>({x:10+Math.random()*80,y:20+Math.random()*60}));
+        if(charts.outlier) charts.outlier.destroy();
+        charts.outlier=new Chart(octx,{type:'scatter',data:{datasets:[{label:'Orders',data:normalPts,backgroundColor:'#6AA2FF99',pointRadius:4},{label:'Outliers',data:[{x:95,y:8},{x:12,y:92},{x:88,y:95}],backgroundColor:'#F87171',pointRadius:6}]},options:{responsive:true,aspectRatio:2.2,plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12}}},scales:{x:{title:{display:true,text:'Order value ($)'},grid:{color:'rgba(148,163,255,0.07)'}},y:{title:{display:true,text:'Order frequency'},grid:{color:'rgba(148,163,255,0.07)'}}}}});
+      });
+    }
+    function renderCityHeatmap(data){
+      const regionHeat=document.getElementById('regionHeat');
+      if(!regionHeat) return;
+      const cities=Object.entries((data&&data.city_metrics)||{});
+      regionHeat.innerHTML=cities.length ? cities.map(([city,metrics])=>{
+        const cells=[
+          ['Attrition', metrics.attrition_rate, '%'],
+          ['Employees', metrics.employees, ''],
+          ['Avg tenure', metrics.avg_tenure, ' mo']
+        ];
+        return cells.map(([label,value,suffix])=>{
+          const intensity=label==='Attrition' ? Math.min(Number(value)/100,1) : Math.min(Number(value)/100,1);
+          return `<div class="heat-cell" style="background:rgba(34,211,238,${0.15+intensity*0.6});">${escapeHtml(city)}<br>${label}: ${value}${suffix}</div>`;
+        }).join('');
+      }).join('') : '<div class="heat-cell">No city metrics available</div>';
+    }
+    const SCENARIO_PRESETS={bull:{growth:16,elastic:8,cost:20,label:'Bull scenario'},base:{growth:6,elastic:12,cost:35,label:'Base scenario'},bear:{growth:-4,elastic:20,cost:55,label:'Bear scenario'}};
+    function setScenario(name){ document.querySelectorAll('.btn[data-sc]').forEach(btn=>btn.classList.remove('active')); const button=document.querySelector(`.btn[data-sc="${name}"]`); if(button) button.classList.add('active'); const p=SCENARIO_PRESETS[name]; if(!p) return; document.getElementById('rangeGrowth').value=p.growth; document.getElementById('rangeElastic').value=p.elastic; document.getElementById('rangeCost').value=p.cost; document.getElementById('scenarioLabel').textContent=p.label; updateSim(); }
+    function randNormal(mean,std){ let u=0,v=0; while(u===0) u=Math.random(); while(v===0) v=Math.random(); return mean + std*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+    function updateSim(){
+      const growth=+document.getElementById('rangeGrowth').value;
+      const elastic=+document.getElementById('rangeElastic').value/10;
+      const cost=+document.getElementById('rangeCost').value/10;
+      const runsIdx=+document.getElementById('rangeRuns').value;
+      document.getElementById('valGrowth').textContent=growth+'%';
+      document.getElementById('valElastic').textContent=elastic.toFixed(1)+'x';
+      document.getElementById('valCost').textContent=cost.toFixed(1)+'%';
+      document.getElementById('valRuns').textContent=(runsIdx*1000).toLocaleString();
+      // Call backend /scenario with live params
+      fetch(`${BACKEND_URL}/scenario?growth=${growth}&elastic=${elastic}&cost=${cost}`)
+        .then(r=>r.json()).then(data=>{
+          document.getElementById('expRevenue').textContent='$'+data.expected_revenue.toFixed(1)+'K';
+          document.getElementById('expRisk').textContent='$'+data.var_95.toFixed(1)+'K';
+          document.getElementById('expSensitivity').textContent=data.sensitivity.toFixed(2);
+          const mctx=document.getElementById('monteCarloChart').getContext('2d');
+          if(charts.monteCarlo) charts.monteCarlo.destroy();
+          const counts=data.histogram.counts;
+          const bins=counts.length;
+          charts.monteCarlo=new Chart(mctx,{type:'bar',data:{labels:data.histogram.labels.map(v=>v.toFixed(1)),datasets:[{label:'Simulated outcomes',data:counts,backgroundColor:counts.map((_,i)=>i<bins*0.3?'#F8717188':i>bins*0.7?'#34D39988':'#6AA2FF99'),borderRadius:4,barPercentage:1,categoryPercentage:1}]},options:{responsive:true,aspectRatio:2.8,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8},title:{display:true,text:'Revenue ($K)'}},y:{grid:{color:'rgba(148,163,255,0.07)'},title:{display:true,text:'Frequency'}}}}});
+        }).catch(()=>{
+          // fallback client-side simulation
+          const baseRevenue=window._liveBaseRevenue||12.4;
+          function randNormal(mean,std){let u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();return mean+std*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+          const mean=baseRevenue*(1+growth/100)*(1+elastic*0.02)*(1-cost/200);
+          const std=0.9+Math.abs(growth)*0.03+elastic*0.15;
+          const n=Math.min(runsIdx*1000,6000);
+          const samples=Array.from({length:n},()=>randNormal(mean,std));
+          const bins=22; const min=Math.min(...samples); const max=Math.max(...samples); const width=(max-min)/bins;
+          const counts=Array(bins).fill(0);
+          samples.forEach(s=>{let idx=Math.floor((s-min)/width);if(idx>=bins)idx=bins-1;if(idx<0)idx=0;counts[idx]++;});
+          const labels=counts.map((_,i)=>(min+width*i).toFixed(1));
+          const sorted=[...samples].sort((a,b)=>a-b);
+          const var95=mean-sorted[Math.floor(samples.length*0.05)];
+          document.getElementById('expRevenue').textContent='$'+mean.toFixed(1)+'M';
+          document.getElementById('expRisk').textContent='$'+Math.max(var95,0.3).toFixed(1)+'M';
+          document.getElementById('expSensitivity').textContent=(1+elastic*0.4-growth*0.01).toFixed(2);
+          const mctx=document.getElementById('monteCarloChart').getContext('2d');
+          if(charts.monteCarlo) charts.monteCarlo.destroy();
+          charts.monteCarlo=new Chart(mctx,{type:'bar',data:{labels,datasets:[{label:'Simulated outcomes',data:counts,backgroundColor:counts.map((_,i)=>i<bins*0.3?'#F8717188':i>bins*0.7?'#34D39988':'#6AA2FF99'),borderRadius:4,barPercentage:1,categoryPercentage:1}]},options:{responsive:true,aspectRatio:2.8,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8},title:{display:true,text:'Revenue ($M)'}},y:{grid:{color:'rgba(148,163,255,0.07)'},title:{display:true,text:'Frequency'}}}}});
+        });
+    }
+    function buildAgentCards(){ const grid=document.getElementById('agentCardsGrid'); grid.innerHTML=AGENTS.map(a=>`<div class="agent-card"><div class="agent-card-top"><div class="agent-avatar">🤖</div><div><div class="agent-name">${a.name}</div><div class="agent-role">${a.role}</div></div></div><div class="agent-task">${a.task}</div><div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#9aa5c0;"><span>${a.confidence}% confidence</span><span>${a.time}</span></div><div class="agent-conf-bar"><div class="agent-conf-fill" style="width:${a.confidence}%"></div></div></div>`).join(''); }
+    function downloadReport(type){ let content, filename, mime='text/plain'; if(type==='json'){ content = JSON.stringify({ report:'TiTech Q3 Executive Decision Brief', generated:new Date().toISOString(), businessHealthScore:87.2, forecastAccuracy:'96.4%', topOpportunities:[{title:'Expand APAC fulfillment capacity',roi:'3.4x',confidence:'91%'},{title:'Bundle Analytics Add-on with Enterprise Suite',roi:'2.6x',confidence:'86%'}], risks:[{title:'APAC customer attrition signal', impact:'$420K',confidence:'88%'}] }, null, 2); filename='titech_executive_report.json'; mime='application/json'; } else { content=`TiTech Predictive Intelligence Engine\nExecutive Decision Brief — Q3 2026\n\nBusiness Health Score: 87.2\nForecast Accuracy: 96.4%\n\nTop Opportunity: Expand APAC fulfillment capacity (ROI 3.4x, 91% confidence)\nKey Risk: APAC customer attrition signal ($420K impact, 88% confidence)\n\nGenerated by the TiTech prototype.`; filename = type==='pdf' ? 'titech_executive_report.pdf.txt' : 'titech_slide_summary.pptx.txt'; }
+      const blob = new Blob([content], {type:mime}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url); }
+    window.addEventListener('load', ()=>{ setScenario('base'); });
+  </script>
+  <script>
+
+async function fetchPrediction(){
+  if(window._predictionStarted) return window._liveData || null;
+  window._predictionStarted = true;
+  const statusEl = document.getElementById('backendResultContent');
+  if(statusEl) statusEl.textContent = 'Calling live backend...';
+  try {
+    const response = await fetch(`${BACKEND_URL}/predict`);
+    if(!response.ok) throw new Error(`Backend returned ${response.status}`);
+    const data = await response.json();
+    if(statusEl) statusEl.innerHTML = `<div>Last run: <b>${new Date().toLocaleTimeString()}</b></div>
+      <div style="margin-top:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div style="padding:10px;border-radius:12px;background:rgba(62,123,250,0.1);">Forecast Accuracy<br><b style="color:#7ff3c4;">${data.forecast_accuracy}%</b></div>
+        <div style="padding:10px;border-radius:12px;background:rgba(62,123,250,0.1);">Churn Rate<br><b style="color:#ffb3b0;">${data.churn_rate}%</b></div>
+        <div style="padding:10px;border-radius:12px;background:rgba(62,123,250,0.1);">Attrition Rate<br><b style="color:#ffdd8a;">${data.attrition_rate}%</b></div>
+        <div style="padding:10px;border-radius:12px;background:rgba(62,123,250,0.1);">Avg Spend<br><b style="color:#bcd4ff;">$${data.avg_spend}</b></div>
+        <div style="padding:10px;border-radius:12px;background:rgba(62,123,250,0.1);">Avg Tenure<br><b style="color:#bcd4ff;">${data.avg_tenure} months</b></div>
+        <div style="padding:10px;border-radius:12px;background:rgba(62,123,250,0.1);">Growth Rate<br><b style="color:#7ff3c4;">${data.growth_rate}%</b></div>
+      </div>`;
+    updateUiWithPrediction(data);
+    return data;
+  } catch (error) {
+    console.error('Prediction fetch error:', error);
+    if(statusEl) statusEl.innerHTML = `<span style="color:#ffb3b0;">⚠ Unable to reach backend at <b>${BACKEND_URL}</b>. Make sure FastAPI is running.</span>`;
+    return null;
+  }
+}
+
+function updateUiWithPrediction(data){
+  if(!data) return;
+
+  // ── KPI tiles ──────────────────────────────────────────────────────
+  const acc = data.forecast_accuracy;
+  const riskLevel = acc >= 85 ? 'Low' : acc >= 70 ? 'Medium' : 'High';
+  const healthScore = Math.round(acc * 0.85 + (riskLevel==='Low'?10:riskLevel==='Medium'?2:-8));
+
+  const el = id => document.getElementById(id);
+  if(el('businessHealthScore')) el('businessHealthScore').textContent = healthScore;
+  if(el('forecastAccuracyValue')) el('forecastAccuracyValue').textContent = acc + '%';
+  const dashboardKpis = document.querySelectorAll('#view-dashboard .kpi-value');
+  if(dashboardKpis[2]) dashboardKpis[2].textContent = acc + '%';
+  if(el('riskLevelValue')) el('riskLevelValue').textContent = riskLevel;
+  if(el('dataEventCount')) el('dataEventCount').textContent = (data.revenue.values.length * 312).toLocaleString();
+  if(el('datasetCount')) el('datasetCount').textContent = '3';
+
+  // ── Dashboard KPI chart — replace with live revenue data ──────────
+  if(charts.dashKpi){
+    charts.dashKpi.data.labels = data.revenue.labels.slice(-7);
+    charts.dashKpi.data.datasets[0].data = data.revenue.values.slice(-7).map(v => +(v/1000).toFixed(1));
+    // derive profit as ~40% of revenue
+    charts.dashKpi.data.datasets[1].data = data.revenue.values.slice(-7).map(v => +((v*0.4)/1000).toFixed(1));
+    charts.dashKpi.update();
+  }
+
+  // ── Forecasting page KPIs ─────────────────────────────────────────
+  document.querySelectorAll('#view-forecasting .kpi-value').forEach((el,i)=>{
+    if(i===0) el.textContent = acc + '%';
+    if(i===1) el.textContent = (100-acc).toFixed(1) + '%';
+    if(i===2) el.textContent = (data.growth_rate > 0 ? '+' : '') + data.growth_rate + '%';
+  });
+
+  // ── Forecasting chart — live historical + forecast ────────────────
+  if(charts.forecast){
+    const histVals = data.revenue.values.map(v => +(v/1000).toFixed(2));
+    const foreVals = data.forecast.values.map(v => +(v/1000).toFixed(2));
+    const histLabels = data.revenue.labels;
+    const foreLabels = data.forecast.labels;
+    const allLabels = [...histLabels, ...foreLabels];
+    const histData = [...histVals, ...Array(foreLabels.length).fill(null)];
+    const foreData = [...Array(histVals.length - 1).fill(null), histVals[histVals.length-1], ...foreVals];
+    const upper = foreData.map(v => v !== null ? +(v * 1.08).toFixed(2) : null);
+    const lower = foreData.map(v => v !== null ? +(v * 0.92).toFixed(2) : null);
+    charts.forecast.data.labels = allLabels;
+    charts.forecast.data.datasets[0].data = upper;
+    charts.forecast.data.datasets[1].data = lower;
+    charts.forecast.data.datasets[2].data = histData;
+    charts.forecast.data.datasets[3].data = foreData;
+    charts.forecast.update();
+  }
+
+  // ── Analytics chart — live revenue ───────────────────────────────
+  if(charts.analyticsMain){
+    charts.analyticsMain.data.labels = data.revenue.labels.slice(-7);
+    charts.analyticsMain.data.datasets[0].data = data.revenue.values.slice(-7).map(v => +(v/1000).toFixed(1));
+    charts.analyticsMain.data.datasets[1].data = data.revenue.values.slice(-7).map(v => +((v*0.4)/1000).toFixed(1));
+    charts.analyticsMain.update();
+  }
+
+  // ── Analytics KPI tiles ───────────────────────────────────────────
+  document.querySelectorAll('#view-analytics .kpi-value').forEach((el,i)=>{
+    const totalRev = data.revenue.values.reduce((a,b)=>a+b,0);
+    if(i===0) el.textContent = '$' + (totalRev/1000).toFixed(1) + 'K';
+    if(i===2) el.textContent = '+' + Math.round(data.avg_tenure * 12);
+    if(i===3) el.textContent = data.attrition_rate + '%';
+  });
+
+  // ── Scenario simulator — update base revenue from real data ───────
+  const totalSales = data.revenue.values.reduce((a,b)=>a+b,0);
+  window._liveBaseRevenue = +(totalSales/1000).toFixed(2);
+
+  // ── Today's AI Insights — inject live numbers ─────────────────────
+  const insights = document.querySelectorAll('#view-dashboard .col-4 > div > div');
+  if(insights[0]) insights[0].innerHTML = `Revenue growth rate <b style="color:#7ff3c4;">${data.growth_rate > 0 ? '+' : ''}${data.growth_rate}%</b>`;
+  if(insights[1]) insights[1].innerHTML = `Customer churn rate <b style="color:#ffdd8a;">${data.churn_rate}%</b>`;
+  if(insights[2]) insights[2].innerHTML = `Employee attrition <b style="color:#ffb3b0;">${data.attrition_rate}%</b>`;
+  if(insights[3]) insights[3].innerHTML = `Avg customer spend <b style="color:#bcd4ff;">$${data.avg_spend}</b>`;
+
+  // ── Store live data globally for reports ─────────────────────────────────
+  window._liveData = data;
+  renderCityHeatmap(data);
+  window._liveHealthScore = healthScore;
+  window._liveRiskLevel = riskLevel;
+  buildReport();
+}
+
+window.addEventListener('load', ()=>{ setScenario('base'); fetchPrediction(); });
+
+function buildReport(){
+  const data = window._liveData;
+  const health = window._liveHealthScore || '-';
+  const risk = window._liveRiskLevel || '-';
+
+  const el = id => document.getElementById(id);
+  if(el('rptHealth')) el('rptHealth').textContent = health;
+  if(el('rptAccuracy')) el('rptAccuracy').textContent = data ? data.forecast_accuracy + '%' : '-';
+  if(el('rptChurn')) el('rptChurn').textContent = data ? data.churn_rate + '%' : '-';
+  if(el('rptAttrition')) el('rptAttrition').textContent = data ? data.attrition_rate + '%' : '-';
+
+  if(!data) return;
+
+  const totalRev = data.revenue.values.reduce((a,b)=>a+b,0);
+  const revK = (totalRev/1000).toFixed(1);
+  const topCity = Object.entries(data.attrition_by_city).sort((a,b)=>b[1]-a[1])[0];
+  const topChurnSub = Object.entries(data.churn_by_subscription).sort((a,b)=>b[1]-a[1])[0];
+  const nextRev = data.forecast.values[0];
+
+  if(el('reportSummaryText')){
+    el('reportSummaryText').innerHTML =
+      `Business health score is <b style="color:#7ff3c4;">${health}</b> with forecast accuracy of <b style="color:#7ff3c4;">${data.forecast_accuracy}%</b>. ` +
+      `Total revenue across ${data.revenue.labels.length} periods: <b style="color:#bcd4ff;">$${revK}K</b>. ` +
+      `Customer churn rate is <b style="color:#ffdd8a;">${data.churn_rate}%</b> — highest in <b>${topChurnSub[0]}</b> tier at <b>${topChurnSub[1]}%</b>. ` +
+      `Employee attrition is <b style="color:#ffb3b0;">${data.attrition_rate}%</b>, highest in <b>${topCity[0]}</b> at <b>${topCity[1]}%</b>. ` +
+      `Next period revenue forecast: <b style="color:#7ff3c4;">$${(nextRev/1000).toFixed(1)}K</b>. ` +
+      `Risk level: <b style="color:${risk==='Low'?'#7ff3c4':risk==='Medium'?'#ffdd8a':'#ffb3b0'}">${risk}</b>.`;
+  }
+
+  const opps = [];
+  if(data.churn_rate > 40) opps.push({title:`Reduce ${topChurnSub[0]} tier churn (${topChurnSub[1]}%)`, roi:'2.8x', conf:'87%'});
+  if(data.attrition_rate > 30) opps.push({title:`Address attrition in ${topCity[0]} (${topCity[1]}%)`, roi:'2.1x', conf:'83%'});
+  if(data.forecast_accuracy > 85) opps.push({title:'Scale revenue with high-confidence forecast', roi:'3.2x', conf: data.forecast_accuracy+'%'});
+  opps.push({title:'Expand top-performing sales period capacity', roi:'1.9x', conf:'81%'});
+
+  if(el('reportOppsTable')) el('reportOppsTable').innerHTML = opps.map(o=>
+    `<tr><td style="padding:10px 14px;">${o.title}</td><td style="padding:10px 14px;">${o.roi}</td><td style="padding:10px 14px;">${o.conf}</td></tr>`
+  ).join('');
+
+  const risks = [];
+  if(data.churn_rate > 45) risks.push({title:'High churn rate across all subscription tiers', impact:'$'+Math.round(data.avg_spend*data.churn_rate*10)+'K', conf:'88%'});
+  if(data.attrition_rate > 35) risks.push({title:`Employee attrition spike in ${topCity[0]}`, impact:'Productivity loss', conf:'84%'});
+  risks.push({title:'Revenue concentration in few periods', impact:'Seasonality risk', conf:'79%'});
+
+  if(el('reportRisksTable')) el('reportRisksTable').innerHTML = risks.map(r=>
+    `<tr><td style="padding:10px 14px;">${r.title}</td><td style="padding:10px 14px;color:#ffb3b0;">${r.impact}</td><td style="padding:10px 14px;">${r.conf}</td></tr>`
+  ).join('');
+}
+
+function downloadReport(type){
+  const data = window._liveData;
+  const health = window._liveHealthScore || 'N/A';
+  const risk = window._liveRiskLevel || 'N/A';
+  let content, filename, mime='text/plain';
+  if(type==='json'){
+    content = JSON.stringify({
+      report:'TiTech Executive Decision Brief',
+      generated: new Date().toISOString(),
+      businessHealthScore: health,
+      forecastAccuracy: data ? data.forecast_accuracy+'%' : 'N/A',
+      churnRate: data ? data.churn_rate+'%' : 'N/A',
+      attritionRate: data ? data.attrition_rate+'%' : 'N/A',
+      avgCustomerSpend: data ? '$'+data.avg_spend : 'N/A',
+      avgTenure: data ? data.avg_tenure+' months' : 'N/A',
+      riskLevel: risk,
+      revenueData: data ? data.revenue : {},
+      forecast: data ? data.forecast : {},
+      churnBySubscription: data ? data.churn_by_subscription : {},
+      attritionByCity: data ? data.attrition_by_city : {}
+    }, null, 2);
+    filename='titech_executive_report.json'; mime='application/json';
+  } else {
+    content = `TiTech Predictive Intelligence Engine\nExecutive Decision Brief — ${new Date().toLocaleDateString()}\n\n`+
+      `Business Health Score: ${health}\n`+
+      `Forecast Accuracy: ${data ? data.forecast_accuracy+'%' : 'N/A'}\n`+
+      `Churn Rate: ${data ? data.churn_rate+'%' : 'N/A'}\n`+
+      `Attrition Rate: ${data ? data.attrition_rate+'%' : 'N/A'}\n`+
+      `Avg Customer Spend: ${data ? '$'+data.avg_spend : 'N/A'}\n`+
+      `Risk Level: ${risk}\n\n`+
+      `Revenue Periods: ${data ? data.revenue.labels.join(', ') : 'N/A'}\n`+
+      `Churn by Subscription: ${data ? JSON.stringify(data.churn_by_subscription) : 'N/A'}\n`+
+      `Attrition by City: ${data ? JSON.stringify(data.attrition_by_city) : 'N/A'}\n`;
+    filename = type==='pdf' ? 'titech_report.pdf.txt' : 'titech_slides.pptx.txt';
+  }
+  const blob=new Blob([content],{type:mime}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+}
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+}
+
+function loadDatasets(){
+  const target = document.getElementById('datasetInventory');
+  if(!target) return;
+  target.textContent = 'Loading datasets…';
+  fetch(`${BACKEND_URL}/datasets`).then(response => {
+    if(!response.ok) throw new Error(`Backend returned ${response.status}`);
+    return response.json();
+  }).then(data => {
+    const rows = data.datasets || [];
+    if(!rows.length){ target.textContent = 'No datasets available.'; return; }
+    target.innerHTML = `<div style="display:grid;gap:8px;">${rows.map(item =>
+      `<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:10px;background:rgba(148,163,255,0.06);"><span>${escapeHtml(item.filename)}</span><span>${escapeHtml(item.source)} · ${item.size_kb ?? '—'} KB</span></div>`
+    ).join('')}</div>`;
+  }).catch(error => { target.textContent = `Unable to load datasets: ${error.message}`; });
+}
+
+function loadHistory(){
+  const target = document.getElementById('historyContent');
+  if(!target) return;
+  target.textContent = 'Loading history…';
+  fetch(`${BACKEND_URL}/history?limit=10`).then(response => {
+    if(!response.ok) throw new Error(`Backend returned ${response.status}`);
+    return response.json();
+  }).then(data => {
+    const predictions = data.predictions || [];
+    const scenarios = data.scenarios || [];
+    const uploads = data.uploads || [];
+    target.innerHTML = `<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <div class="badge info">Predictions: ${predictions.length}</div>
+      <div class="badge info">Scenarios: ${scenarios.length}</div>
+      <div class="badge info">Uploads: ${uploads.length}</div>
+    </div><div style="margin-top:14px;display:grid;gap:8px;">${predictions.length ? predictions.map(item =>
+      `<div style="padding:10px 12px;border-radius:10px;background:rgba(148,163,255,0.06);">Prediction #${item.id} · accuracy ${item.forecast_accuracy ?? 'N/A'}% · risk ${escapeHtml(item.risk_level || 'N/A')} · ${escapeHtml(item.created_at || '')}</div>`
+    ).join('') : '<div>No prediction history yet.</div>'}</div>`;
+  }).catch(error => { target.textContent = `Unable to load history: ${error.message}`; });
+}
+
+</script>
+</body>
+</html>
