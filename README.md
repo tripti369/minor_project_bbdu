@@ -1,6 +1,3 @@
-# minor_project_bbdu
-# Deployed link- https://radhe-radhe-sarthi-ai.onrender.com/
-
 # Backend — Predictive Intelligence Engine API
 
 FastAPI + SQLite backend. Real CSV data, real database, no mock endpoints.
