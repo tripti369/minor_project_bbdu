@@ -2,6 +2,7 @@
 
 # Team members with their roles : Tripti Tiwari -:(Lead + Agentic AI)
 # Yashi Tripathi -:( Documentation)
+# Anam Ali
 
 # Backend — Predictive Intelligence Engine API
 
