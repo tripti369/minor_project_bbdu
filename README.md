@@ -1,7 +1,7 @@
 # Deployed link- https://radhe-radhe-sarthi-ai.onrender.com/
 
 # Team members with their roles : Tripti Tiwari -:(Lead + Agentic AI)
-# Yashi Tripathi
+# Yashi Tripathi -:( Documentation)
 
 # Backend — Predictive Intelligence Engine API
 
