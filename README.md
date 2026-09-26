@@ -1,6 +1,6 @@
 # Deployed link- https://radhe-radhe-sarthi-ai.onrender.com/
 
-# Team members with their roles 
+# Team members with their roles : Tripti Tiwari,
 # Backend — Predictive Intelligence Engine API
 
 FastAPI + SQLite backend. Real CSV data, real database, no mock endpoints.
