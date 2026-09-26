@@ -1,155 +1,65 @@
 """
-Main Entry Point
+main.py
+=======
+FastAPI application entrypoint for the Predictive Intelligence Engine.
 
-Predictive Intelligence Engine
+Run with (from the backend/ folder):
+    uvicorn app.main:app --reload --port 8000
 
-This file is responsible for:
-1. Creating the Analysis Agent
-2. Running Dataset Analysis
-3. Running Forecasting
-4. Displaying Results
+Or simply:
+    python run.py
 """
 
-from agents.analysis_agent import AnalysisAgent
-from agents.forecasting_agent import ForecastingAgent
-from agents.scenario_agent import ScenarioAgent
-from agents.rag_agent import RAGAgent
-from agents.decision_agent import DecisionAgent
+import os
 
-def main():
-    """Main execution function."""
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-    print("=" * 60)
-    print("Predictive Intelligence Engine Started")
-    print("=" * 60)
+from app.database import init_db
+from app.routes import predict, analysis, scenario, upload, knowledge, history, datasets
 
-    # ==========================================================
-    # ANALYSIS AGENT
-    # ==========================================================
-
-    print("\n[STEP 1] Creating Analysis Agent...")
-    analysis_agent = AnalysisAgent()
-    print("✓ Analysis Agent Created")
-
-    print("\n[STEP 2] Starting Dataset Analysis...")
-    analysis_result = analysis_agent.analyze_dataset(
-        "customer_churn_cleaned.csv"
-    )
-    print("✓ Dataset Analysis Completed")
-
-    print("\n" + "=" * 60)
-    print("ANALYSIS RESULTS")
-    print("=" * 60)
-
-    print(f"\nDataset Name: {analysis_result['dataset_name']}")
-
-    print("\nBasic Statistics:")
-    print(analysis_result["basic_statistics"])
-
-    print("\nDescriptive Statistics:")
-    print(analysis_result["descriptive_statistics"])
-
-    print("\nCorrelation Matrix:")
-    print(analysis_result["correlation"])
-
-    print("\nOutlier Report:")
-    print(analysis_result["outlier_report"])
-
-    # ==========================================================
-    # FORECASTING AGENT
-    # ==========================================================
-
-    print("\n" + "=" * 60)
-    print("FORECASTING RESULTS")
-    print("=" * 60)
-
-    forecast_agent = ForecastingAgent()
-
-    forecast_result = forecast_agent.forecast_dataset(
-        filename="retail_warehouse_sales_cleaned.csv",
-        date_columns=["year", "month"],
-        target_column="retail_sales",
-        forecast_periods=12
-    )
-
-    print("\nDataset:")
-    print(forecast_result["dataset_name"])
-
-    print("\nMAPE:")
-    print(forecast_result["mape"])
-
-    print("\nForecast Accuracy:")
-    print(f"{forecast_result['forecast_accuracy']}%")
-
-    print("\nNext 12 Forecast Values:")
-    print(forecast_result["forecast"])
-    print("\n" + "=" * 60)
-    print("SCENARIO ANALYSIS")
-    print("=" * 60)
-
-    scenario_agent = ScenarioAgent()
-
-    scenario = scenario_agent.simulate(
-    forecast_result["forecast"]
+app = FastAPI(
+    title="Predictive Intelligence Engine API",
+    description="Real-data backend powering forecasting, churn/attrition analysis, "
+                 "Monte Carlo scenario simulation, CSV upload and a lightweight RAG knowledge base.",
+    version="1.0.0",
 )
 
-    print("\nBest Case")
-    print(scenario["best_case"])
+cors_origins = os.getenv("CORS_ORIGINS", "*")
+allow_origins = ["*"] if cors_origins.strip() == "*" else [o.strip() for o in cors_origins.split(",")]
 
-    print("\nBase Case")
-    print(scenario["base_case"])
-
-    print("\nWorst Case")
-    print(scenario["worst_case"])    # ==========================================================
-    # RAG AGENT
-    # ==========================================================
-
-    print("\n" + "=" * 60)
-    print("KNOWLEDGE RETRIEVAL")
-    print("=" * 60)
-
-    rag_agent = RAGAgent()
-
-    rag_agent.build_index()
-
-    rag_result = rag_agent.answer(
-        "business forecasting risk"
-    )
-
-    print("\nRetrieved Documents:")
-
-    for doc in rag_result["results"]:
-
-        print("-" * 40)
-        print("Document :", doc["doc_id"])
-        print("Score    :", round(doc["score"], 2))
-        print("Excerpt  :", doc["excerpt"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allow_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-    # ==========================================================
-    # DECISION AGENT
-    # ==========================================================
-
-    print("\n" + "=" * 60)
-    print("EXECUTIVE DECISION")
-    print("=" * 60)
-
-    decision_agent = DecisionAgent()
-
-    decision = decision_agent.generate_decision(
-        analysis_result,
-        forecast_result,
-        rag_result
-    )
-
-    for key, value in decision.items():
-
-        print(f"{key}: {value}")
-
-    print("\n" + "=" * 60)
-    print("Program Finished Successfully")
-    print("=" * 60)
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 
-if __name__ == "__main__":
-    main()
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "message": "Predictive Intelligence Engine API is running",
+        "docs": "/docs",
+    }
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "healthy"}
+
+
+app.include_router(predict.router, prefix="/api", tags=["Predict"])
+app.include_router(analysis.router, prefix="/api", tags=["Analysis"])
+app.include_router(scenario.router, prefix="/api", tags=["Scenario"])
+app.include_router(upload.router, prefix="/api", tags=["Upload"])
+app.include_router(knowledge.router, prefix="/api", tags=["Knowledge / RAG"])
+app.include_router(history.router, prefix="/api", tags=["History"])
+app.include_router(datasets.router, prefix="/api", tags=["Datasets"])
